@@ -8,14 +8,14 @@ __pycache__/
 .idea/
 .vscode/
 
-# Experiment output directories
+# For outputs_light, ignore only the large binary files
+/outputs_light/**/*.bin
+
+# Other output/data directories to ignore for now
 /proc_data/
 /ablation_study_output/
-/outputs_light/
 /runs/
 /trex_output_ablation_size_sub1e2/
-
-# Data and Model files
 /data/
 /pretrained_models/
 
