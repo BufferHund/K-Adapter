@@ -10,10 +10,10 @@ __pycache__/
 
 # For outputs_light, ignore only the large binary files
 /outputs_light/**/*.bin
+/ablation_study_output/**/*.bin
 
 # Other output/data directories to ignore for now
 /proc_data/
-/ablation_study_output/
 /runs/
 /trex_output_ablation_size_sub1e2/
 /data/
