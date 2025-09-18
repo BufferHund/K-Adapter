@@ -484,17 +484,17 @@ class AdapterModel(nn.Module):
         class AdapterConfig:
             project_hidden_size: int = self.config.hidden_size
             hidden_act: str = "gelu"
-            adapter_size: int = self.adapter_size  # 64
+            adapter_size: int = self.adapter_size
             adapter_initializer_range: float = 0.0002
             is_decoder: bool = False
             attention_probs_dropout_prob: float= 0.1
             hidden_dropout_prob: float=0.1
-            hidden_size: int=768
+            hidden_size: int = self.adapter_size
             initializer_range: float=0.02
-            intermediate_size: int=3072
+            intermediate_size: int = self.adapter_size * 4
             layer_norm_eps: float=1e-05
             max_position_embeddings: int=514
-            num_attention_heads: int=12
+            num_attention_heads: int = max(1, self.adapter_size // 64)
             num_hidden_layers: int=self.args.adapter_transformer_layers
             num_labels: int=2
             output_attentions: bool=False
@@ -589,10 +589,25 @@ class ETModel(nn.Module):
             if self.lin_adapter is not None:
                 task_features = task_features + lin_adapter_outputs
         elif self.args.fusion_mode == 'concat':
+            # Robustly handle concat mode with any combination of adapters.
             combine_features = pretrained_model_last_hidden_states
-            fac_features = self.task_dense_fac(torch.cat([combine_features, fac_adapter_outputs], dim=2))
-            lin_features = self.task_dense_lin(torch.cat([combine_features, lin_adapter_outputs], dim=2))
-            task_features = self.task_dense(torch.cat([fac_features, lin_features], dim=2))
+            fac_features = None
+            lin_features = None
+
+            if self.fac_adapter is not None:
+                fac_features = self.task_dense_fac(torch.cat([combine_features, fac_adapter_outputs], dim=2))
+
+            if self.lin_adapter is not None:
+                lin_features = self.task_dense_lin(torch.cat([combine_features, lin_adapter_outputs], dim=2))
+
+            if fac_features is not None and lin_features is not None:
+                task_features = self.task_dense(torch.cat([fac_features, lin_features], dim=2))
+            elif fac_features is not None:
+                task_features = fac_features
+            elif lin_features is not None:
+                task_features = lin_features
+            else:
+                task_features = combine_features # Fallback if no adapters are provided
 
         start_id = start_id.unsqueeze(1)
         entity_output = torch.bmm(start_id, task_features)

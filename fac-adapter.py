@@ -388,17 +388,17 @@ class AdapterModel(nn.Module):
         class AdapterConfig:
             project_hidden_size: int = self.config.hidden_size
             hidden_act: str = "gelu"
-            adapter_size: int = self.adapter_size  # 64
+            adapter_size: int = self.adapter_size
             adapter_initializer_range: float = 0.0002
             is_decoder: bool = False
             attention_probs_dropout_prob: float= 0.1
             hidden_dropout_prob: float=0.1
-            hidden_size: int=768
+            hidden_size: int = self.adapter_size
             initializer_range: float=0.02
-            intermediate_size: int=3072
+            intermediate_size: int = self.adapter_size * 4
             layer_norm_eps: float=1e-05
             max_position_embeddings: int=514
-            num_attention_heads: int=12
+            num_attention_heads: int = max(1, self.adapter_size // 64)
             num_hidden_layers: int=self.args.adapter_transformer_layers
             num_labels: int=2
             output_attentions: bool=False
@@ -712,6 +712,9 @@ def main():
 
     logger.info("Training/evaluation parameters %s", args)
 
+    trainable_params = sum(p.numel() for p in adapter_model.parameters() if p.requires_grad)
+    logger.info("***** For adapter_size = %d, the number of trainable parameters is: %d *****", args.adapter_size, trainable_params)
+
     val_dataset = load_and_cache_examples(args, args.task_name, tokenizer, 'dev', evaluate=True)
 
     # Training
@@ -728,7 +731,7 @@ def main():
             os.makedirs(args.output_dir)
 
         logger.info("Saving model checkpoint to %s", args.output_dir)
-        model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training
+        model_to_save = adapter_model.module if hasattr(adapter_model, 'module') else adapter_model  # Take care of distributed/parallel training
         model_to_save.save_pretrained(args.output_dir)
         tokenizer.save_pretrained(args.output_dir)
         torch.save(args, os.path.join(args.output_dir, 'training_args.bin'))

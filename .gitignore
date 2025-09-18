@@ -1,5 +1,28 @@
-.idea
-/data
-/pretrained_models
-/proc_data
-/pytorch_transformers/__pycache__
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE directories
+.idea/
+.vscode/
+
+# Experiment output directories
+/proc_data/
+/ablation_study_output/
+/outputs_light/
+/runs/
+/trex_output_ablation_size_sub1e2/
+
+# Data and Model files
+/data/
+/pretrained_models/
+
+# Environment
+.env
+venv/
+env/
+
+# OS-specific
+.DS_Store
