@@ -55,16 +55,11 @@
     - **固定参数**: `adapter_list="0,11,22"`
     - **可变参数**: `adapter_size` 在 `(768, 256, 64, 16)` 中选择。
 - **执行步骤**:
-    1.  **预训练**: 运行 `run_ablation_study_size.sh` 脚本。它会在 `ablation_study_output/fac_adapter_size_sub1e2` 目录下为每个尺寸预训练一个Factual Adapter。
-    2.  **微调**:
-        - 我们创建了一个模板脚本 `run_finetune_single_adapter_size16.sh`。
-        - 通过复制和修改此模板，可以为每个尺寸创建一个微调脚本。
-        - 运行这些脚本，它们会自动加载对应尺寸的预训练Adapter，并在 `outputs_light/` 目录下生成微调结果。
-    3.  **数据收集**: 从预训练日志中收集可训练参数量，从微调结果文件 (`..._result.txt`) 中收集最终的F1分数，进行对比分析。
+    1.  **预训练**: 运行 `run_ablation_study_size.sh` 脚本。
+    2.  **微调**: 为每个尺寸运行对应的 `run_finetune_single_adapter_size<SIZE>.sh` 脚本。
+    3.  **数据收集**: 从微调结果文件 (`..._result.txt`) 中收集最终的F1分数。
 
 ### 实验一结果与分析
-
-实验运行完成后，我们从各个微调输出目录的 `_result.txt` 文件中，提取出最后一次评估在 `test` 测试集上的性能指标，汇总如下。
 
 | Adapter 尺寸 | Micro F1 (综合性能) | Macro F1 (均衡性能) | Precision (精确率) | Recall (召回率) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -75,17 +70,16 @@
 
 #### 核心发现
 
-最关键的发现是，**Adapter的性能对尺寸变化不敏感**。在瓶颈层维度从16增加到768（参数量差异巨大）的过程中，所有关键性能指标（Micro F1, Macro F1, Precision, Recall）都保持惊人地稳定，几乎没有变化。
+最关键的发现是，**Adapter的性能对尺寸变化不敏感**。在瓶颈层维度从16增加到768的过程中，所有关键性能指标都保持惊人地稳定，几乎没有变化。
 
 #### 详细解读
 
-1.  **高参数效率 (High Parameter Efficiency)**: 这个结果有力地证明了Adapter架构的有效性。一个尺寸仅为16的极小型适配器，其性能表现与一个尺寸大得多的768适配器相当。这意味着我们可以用极小的参数量和计算开销，达到几乎无损的性能，这在资源受限或追求推理速度的场景下非常有价值。
-
-2.  **任务特性推断**: 实验结果也暗示，对于OpenEntity这个实体分类任务，适配RoBERTa-large模型并不需要一个高维度的复杂适配器。任务所需的关键知识可能被成功地编码在了一个非常低维的子空间中。
+1.  **高参数效率 (High Parameter Efficiency)**: 这个结果有力地证明了Adapter架构的有效性。一个尺寸仅为16的极小型适配器，其性能表现与一个尺寸大得多的768适配器相当。
+2.  **任务特性推断**: 实验结果也暗示，对于OpenEntity这个实体分类任务，适配RoBERTa-large模型并不需要一个高维度的复杂适配器。
 
 #### 结论
 
-对于在OpenEntity任务上使用Factual Adapter，**明确推荐使用小尺寸的Adapter（例如16或64）**。这可以在不牺牲模型性能的前提下，最大化地节约训练资源、降低模型存储开销。
+对于在OpenEntity任务上使用Factual Adapter，**明确推荐使用小尺寸的Adapter（例如16或64）**，因为它们在性能上与大尺寸Adapter几乎无差，但参数效率极高。
 
 ---
 
@@ -95,8 +89,47 @@
 - **方法**:
     - **固定参数**: `adapter_size=64`
     - **可变参数**: `adapter_list` 在 `("0,1,2", "10,11,12", "21,22,23")` 中选择。
-    - **基线**: 使用实验一中 `size=64`, `list="0,11,22"` 的结果作为“分散式”策略的基线，无需重复运行。
+    - **基线**: 使用实验一中 `size=64`, `list="0,11,22"` 的结果作为“分散式”策略的基线。
 - **执行步骤**:
-    1.  **预训练**: 运行 `run_ablation_study_position.sh` 脚本。该脚本已修改为跳过基线，只运行3种新的位置配置。
+    1.  **预训练**: 运行 `run_ablation_study_position.sh` 脚本（已修改为跳过基线）。
     2.  **微调**: 待预训练全部结束后，运行独立的微调脚本 `run_finetune_pos_early.sh`, `run_finetune_pos_middle.sh`, 和 `run_finetune_pos_late.sh`。
-    3.  **数据收集**: 从每个微调任务的输出目录中收集F1分数，并与基线结果进行比较，分析不同插入策略的优劣。
+    3.  **数据收集**: 从每个微调任务的输出目录中收集F1分数，并与基线结果进行比较。
+
+### 实验二结果与分析
+
+*(在所有位置的微调实验完成后，请在此处填充结果表格和分析。)*
+
+---
+
+## 4. 实验三 (规划中)：Adapter 内部复杂度研究
+
+- **目标**: 探究Adapter模块内部的微型Transformer层数 (`adapter_transformer_layers`) 所带来的影响。
+- **方法**:
+    - **固定参数**: `adapter_size=64`, `adapter_list="0,11,22"`。
+    - **可变参数**: `adapter_transformer_layers`。
+    - **基线**: 实验一中 `size=64` 的结果即为 `layers=2` 的基线。
+    - **新实验组**:
+        - `--adapter_transformer_layers 1` (更简单的Adapter)
+        - `--adapter_transformer_layers 4` (更复杂的Adapter)
+- **执行步骤**:
+    1.  **预训练**: 运行 `run_ablation_study_layers.sh` 脚本。
+    2.  **微调**: 运行对应的 `run_finetune_layers_1.sh` 和 `run_finetune_layers_4.sh` 脚本。
+    3.  **分析**: 比较不同内部层数下的最终F1分数，观察增加内部复杂度是否能带来性能提升。
+
+---
+
+## 5. 实验四 (规划中)：与全量微调的效率对比
+
+- **目标**: 量化对比 **Adapter-Tuning** 与 **Full Fine-tuning** 在 OpenEntity 任务上的性能表现和参数效率。
+- **方法**:
+    - **实验组1 (Adapter-Tuning)**: 复用实验一中 `size=16` 的结果。此方法冻结了主模型，只训练Adapter。
+    - **实验组2 (Full Fine-tuning)**: 不加载任何Adapter，解冻并训练整个RoBERTa-large模型。
+- **关键配置差异**:
+    - **学习率**: 全量微调的学习率需要调小以防止破坏预训练权重，我们使用 `1e-5`。
+    - **训练参数**: 全量微调时，`--freeze_bert` 参数需置空 (`""`)，且不加载任何Adapter (`--meta_fac_adaptermodel=""`)。
+- **执行步骤**:
+    1.  运行 `run_finetune_full.sh` 脚本来执行全量微调。
+    2.  实验结束后，从输出目录中提取Micro F1分数。
+    3.  计算并对比两种方法的可训练参数量和最终性能。
+- **预期分析**:
+    通过对比，可以清晰地展示出Adapter-Tuning用极小的参数量（预计不到全量微调的1%），达到了与全量微调相当的性能，从而有力地证明其参数效率的优越性。

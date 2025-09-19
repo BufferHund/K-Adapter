@@ -1,21 +1,21 @@
 #!/bin/bash
-# Fine-tuning for LATE position: 21,22,23
+# Fine-tuning for Adapter with 4 internal Transformer layers
 
 # --- Configuration ---
 GPU_DEVICE="0"
 ADAPTER_SIZE=64
-POS="21,22,23"
-POS_NAME="21_22_23"
+ADAPTER_LIST="0,11,22"
+ADAPTER_LAYERS=4
 
-PRETRAIN_BASE_DIR="./ablation_study_output/fac_adapter_position_size${ADAPTER_SIZE}"
-FINETUNE_BASE_DIR="./outputs_light/openentity_finetune_position_size${ADAPTER_SIZE}"
+PRETRAIN_BASE_DIR="./ablation_study_output/fac_adapter_layers_size${ADAPTER_SIZE}"
+FINETUNE_BASE_DIR="./outputs_light/openentity_finetune_layers_size${ADAPTER_SIZE}"
 
 # --- Path Construction ---
-PRETRAINED_ADAPTER_PATH="${PRETRAIN_BASE_DIR}/run_pos_${POS_NAME}/trex_maxlen-64_batch-16_lr-5e-05_warmup-1200_epoch-5_fac-adapter-pos-${POS_NAME}/pytorch_model.bin"
-OUTPUT_DIR="${FINETUNE_BASE_DIR}/finetune_pos_${POS_NAME}"
+PRETRAINED_ADAPTER_PATH="${PRETRAIN_BASE_DIR}/run_layers_${ADAPTER_LAYERS}/trex_maxlen-64_batch-16_lr-5e-05_warmup-1200_epoch-5_fac-adapter-layers-${ADAPTER_LAYERS}/pytorch_model.bin"
+OUTPUT_DIR="${FINETUNE_BASE_DIR}/finetune_layers_${ADAPTER_LAYERS}"
 
 # --- Run Fine-tuning ---
-echo "Running fine-tuning for position: ${POS_NAME}"
+echo "Running fine-tuning for adapter_transformer_layers = ${ADAPTER_LAYERS}"
 
 if [ ! -f "$PRETRAINED_ADAPTER_PATH" ]; then
     echo "ERROR: Pre-trained adapter not found at: $PRETRAINED_ADAPTER_PATH"
@@ -31,7 +31,7 @@ CUDA_VISIBLE_DEVICES=$GPU_DEVICE python examples/run_finetune_openentity_adapter
     --task_name entity_type \
     --data_dir data/OpenEntity \
     --output_dir $OUTPUT_DIR  \
-    --comment "finetune-fac-pos-${POS_NAME}" \
+    --comment "finetune-fac-layers-${ADAPTER_LAYERS}" \
     --max_seq_length 256  \
     --per_gpu_eval_batch_size 4   \
     --per_gpu_train_batch_size 4   \
@@ -45,7 +45,8 @@ CUDA_VISIBLE_DEVICES=$GPU_DEVICE python examples/run_finetune_openentity_adapter
     --freeze_bert="" \
     --freeze_adapter="True" \
     --adapter_size $ADAPTER_SIZE \
-    --adapter_list "$POS" \
+    --adapter_list "$ADAPTER_LIST" \
+    --adapter_transformer_layers $ADAPTER_LAYERS \
     --adapter_skip_layers 0 \
     --meta_fac_adaptermodel="$PRETRAINED_ADAPTER_PATH" \
     --meta_lin_adaptermodel=""
