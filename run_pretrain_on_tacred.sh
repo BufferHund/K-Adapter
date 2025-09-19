@@ -14,7 +14,7 @@ GPU='0' # Assuming a single GPU for this run, modify if you have more
 CUDA_VISIBLE_DEVICES=$GPU python fac-adapter.py  \
         --model_type roberta \
         --model_name=roberta-large  \
-        --data_dir=./data/tacred  \
+        --data_dir=./data/tacred_processed_for_pretrain  \
         --output_dir=./pretrained_models/tacred_pretrained_adapter \
         --restore '' \
         --do_train  \

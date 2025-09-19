@@ -110,7 +110,7 @@ def main():
 
     # --- Common Model Arguments (from run_example.sh) ---
     args = argparse.Namespace()
-    args.adapter_size = 64 # Using 64 as a balanced default, not 768 from example
+    args.adapter_size = 768 # Corrected to match pre-trained fac-adapter model
     args.adapter_list = [0, 11, 22] # Using 0,11,22 instead of 0,11,23 from example
     args.adapter_transformer_layers = 2
     args.adapter_skip_layers = 0
@@ -137,6 +137,7 @@ def main():
 
     # Setup device
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    args.device = device # Ensure device is set before model instantiation
     print(f"Using device: {device}")
 
     # Load tokenizer and model
