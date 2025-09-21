@@ -27,3 +27,5 @@ checkpoint-*/
 /runs/
 /trex_output_ablation_size_sub1e2/
 /data/
+/outputs_light/
+/pretrained_models/
