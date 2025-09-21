@@ -671,7 +671,7 @@ def main():
     # Set seed
     set_seed(args)
 
-    processor = processors['trex']()
+    processor = processors[args.task_name]()
     args.output_mode = output_modes[args.task_name]
     label_list = processor.get_labels()
     num_labels = len(label_list)

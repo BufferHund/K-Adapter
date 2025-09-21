@@ -112,7 +112,9 @@ class DataProcessor(object):
     @classmethod
     def _read_json(cls, input_file):
         with open(input_file, 'r', encoding='utf8') as f:
-            return json.load(f)
+            lines = f.readlines()
+            data = [json.loads(line) for line in lines if line.strip()]
+            return data
 
 
 class FindHeadInputExample(object):
@@ -697,14 +699,25 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
         else:
             tokens_b.pop()
 
+
+tacred_relations = ['per:schools_attended', 'org:founded', 'org:number_of_employees/members', 'per:city_of_birth', 'org:alternate_names', 'per:city_of_death', 'per:date_of_birth', 'org:founded_by', 'per:parents', 'per:title', 'per:alternate_names', 'per:age', 'per:countries_of_residence', 'per:siblings', 'per:cause_of_death', 'per:stateorprovince_of_birth', 'per:date_of_death', 'org:city_of_headquarters', 'org:shareholders', 'per:charges', 'NA', 'org:members', 'org:country_of_headquarters', 'per:stateorprovince_of_death', 'per:origin', 'per:children', 'org:member_of', 'org:political/religious_affiliation', 'per:spouse', 'per:stateorprovinces_of_residence', 'per:cities_of_residence', 'org:stateorprovince_of_headquarters', 'per:country_of_death', 'org:subsidiaries', 'per:employee_of', 'org:website', 'per:other_family', 'org:parents', 'org:top_members/employees', 'per:religion', 'org:dissolved', 'per:country_of_birth']
+
+class TACREDProcessor(TREXProcessor):
+    """Processor for the TACRED data set."""
+    def get_labels(self):
+        """See base class."""
+        return tacred_relations
+
 processors = {
     "trex": TREXProcessor,
+    "tacred_pretrain": TACREDProcessor,
     "trex_entity_typing": TREXProcessor_et,
     "find_head": FindHeadProcessor,
 }
 
 output_modes = {
     "trex": "classification",
+    "tacred_pretrain": "classification",
     "trex_entity_typing": "classification",
     "find_head":"classification"
 }
